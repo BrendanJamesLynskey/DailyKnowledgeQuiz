@@ -93,3 +93,4 @@ prisma/
 - **Phase 2: Auth** - Complete
 - **Phase 3: GitHub Integration** - Complete
 - **Phase 4: Question Generation** - Complete
+- **Phase 5: Question UI** - Complete
