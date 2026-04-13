@@ -90,3 +90,4 @@ prisma/
 ## Build Status
 
 - **Phase 1: Project Scaffold** - Complete
+- **Phase 2: Auth** - Complete

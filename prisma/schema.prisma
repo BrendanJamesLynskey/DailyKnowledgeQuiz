@@ -9,9 +9,10 @@ datasource db {
 
 model User {
   id              String    @id @default(cuid())
-  email           String    @unique
+  email           String?   @unique
+  emailVerified   DateTime?
   name            String?
-  githubUsername   String    @unique
+  githubUsername   String?   @unique
   image           String?
   questionsPerDay Int       @default(3)
   createdAt       DateTime  @default(now())
