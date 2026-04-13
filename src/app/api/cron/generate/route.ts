@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateQuestions } from "@/lib/llm/generator";
+import { sendEmail } from "@/lib/email/client";
+import { buildDailyDigestHtml } from "@/lib/email/templates";
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -25,6 +27,7 @@ export async function POST(request: NextRequest) {
   });
 
   const results = [];
+  const appUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
   for (const user of users) {
     if (user.repos.length === 0) continue;
@@ -52,21 +55,51 @@ export async function POST(request: NextRequest) {
         questions.push(question);
       }
 
+      let emailSent = false;
+
       if (questions.length > 0) {
-        await prisma.dailyBatch.create({
+        const batch = await prisma.dailyBatch.create({
           data: {
             userId: user.id,
-            sentVia: "web",
+            sentVia: user.email ? "email" : "web",
             questions: {
               connect: questions.map((q) => ({ id: q.id })),
             },
           },
         });
+
+        if (user.email && process.env.RESEND_API_KEY) {
+          try {
+            const html = buildDailyDigestHtml({
+              userName: user.name ?? "there",
+              questions: questions.map((q) => ({
+                subjectArea: q.subjectArea,
+                questionText: q.questionText,
+                difficulty: q.difficulty,
+              })),
+              batchId: batch.id,
+              appUrl,
+            });
+
+            await sendEmail({
+              to: user.email,
+              subject: "Your Daily Knowledge Quiz is ready!",
+              html,
+            });
+            emailSent = true;
+          } catch (emailError) {
+            console.error(
+              `Failed to send email to ${user.email}:`,
+              emailError
+            );
+          }
+        }
       }
 
       results.push({
         userId: user.id,
         questionsGenerated: questions.length,
+        emailSent,
       });
     } catch (error) {
       results.push({
