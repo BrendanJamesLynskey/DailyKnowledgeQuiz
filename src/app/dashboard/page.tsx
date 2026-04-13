@@ -3,6 +3,9 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { calculateStreak, getSubjectBreakdown } from "@/lib/streak";
+import { StreakBadge } from "@/components/StreakBadge";
+import { StatsChart } from "@/components/StatsChart";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -15,7 +18,7 @@ export default async function DashboardPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [todayBatch, totalResponses, correctResponses, repoCount] =
+  const [todayBatch, totalResponses, correctResponses, repoCount, streak, subjectBreakdown] =
     await Promise.all([
       prisma.dailyBatch.findFirst({
         where: { userId, sentAt: { gte: today } },
@@ -31,6 +34,8 @@ export default async function DashboardPage() {
       prisma.response.count({ where: { userId } }),
       prisma.response.count({ where: { userId, isCorrect: true } }),
       prisma.repo.count({ where: { userId, isActive: true } }),
+      calculateStreak(userId),
+      getSubjectBreakdown(userId),
     ]);
 
   const accuracy =
@@ -53,7 +58,8 @@ export default async function DashboardPage() {
         Welcome back, {session.user.name ?? "there"}!
       </p>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <StreakBadge streak={streak} />
         <div className="rounded-lg border border-gray-200 p-5 dark:border-gray-800">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Questions answered
@@ -137,6 +143,17 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+      {subjectBreakdown.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Subject Breakdown
+          </h2>
+          <div className="mt-4 rounded-lg border border-gray-200 p-6 dark:border-gray-800">
+            <StatsChart stats={subjectBreakdown} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

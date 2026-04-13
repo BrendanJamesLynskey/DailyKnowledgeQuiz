@@ -97,3 +97,4 @@ prisma/
 - **Phase 4: Question Generation** - Complete
 - **Phase 5: Question UI** - Complete
 - **Phase 6: Email Delivery** - Complete
+- **Phase 7: History & Stats** - Complete
