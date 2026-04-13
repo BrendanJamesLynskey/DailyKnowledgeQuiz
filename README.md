@@ -27,70 +27,129 @@ A full-stack Next.js application that analyses a user's GitHub repositories, gen
 
 ## Getting Started
 
-### Prerequisites
+### 1. Clone and install
 
-- Node.js 18+
-- PostgreSQL database (Neon recommended)
-- GitHub OAuth app credentials
-- Anthropic or OpenAI API key
-- Resend API key (optional, for email delivery)
+```bash
+git clone https://github.com/BrendanJamesLynskey/dummy_003.git
+cd dummy_003
+npm install
+```
 
-### Setup
+### 2. Create a PostgreSQL database
 
-1. Clone the repository:
+Sign up at [neon.tech](https://neon.tech) (free tier) and create a new project. Copy the connection string — it looks like:
+
+```
+postgresql://user:password@ep-xxx.region.aws.neon.tech/neondb?sslmode=require
+```
+
+### 3. Create a GitHub OAuth app
+
+1. Go to [github.com/settings/developers](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**
+2. Set **Homepage URL** to `http://localhost:3000`
+3. Set **Authorization callback URL** to `http://localhost:3000/api/auth/callback/github`
+4. After creating, note the **Client ID** and generate a **Client Secret**
+
+### 4. Get an LLM API key
+
+Choose one:
+
+- **Anthropic** (default): Get a key at [console.anthropic.com](https://console.anthropic.com)
+- **OpenAI**: Get a key at [platform.openai.com](https://platform.openai.com)
+
+### 5. (Optional) Set up email delivery
+
+Sign up at [resend.com](https://resend.com) and create an API key. Without this, the app still works — questions just won't be emailed.
+
+### 6. Configure environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in your `.env.local`:
+
+```env
+# Database — paste your Neon connection string
+DATABASE_URL=postgresql://...
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<run: openssl rand -base64 32>
+
+# GitHub OAuth — from step 3
+GITHUB_CLIENT_ID=your-client-id
+GITHUB_CLIENT_SECRET=your-client-secret
+
+# LLM — "anthropic" (default) or "openai"
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+# or: OPENAI_API_KEY=sk-...
+
+# Email (optional)
+RESEND_API_KEY=re_...
+
+# Cron security
+CRON_SECRET=<run: openssl rand -base64 32>
+```
+
+Generate secrets with:
+```bash
+openssl rand -base64 32
+```
+
+### 7. Set up the database and start
+
+```bash
+npx prisma generate        # Generate the Prisma client
+npx prisma db push         # Push schema to your database
+npm run dev                 # Start dev server at localhost:3000
+```
+
+### 8. First use
+
+1. Open [http://localhost:3000](http://localhost:3000)
+2. Click **Sign in with GitHub**
+3. Go to **Settings** → click **Sync repos** to pull your GitHub repositories
+4. Toggle repos on/off to control which ones generate questions
+5. To trigger question generation locally (since Vercel Cron only runs in production):
    ```bash
-   git clone https://github.com/BrendanJamesLynskey/dummy_003.git
-   cd dummy_003
+   curl -X POST http://localhost:3000/api/cron/generate \
+     -H "Authorization: Bearer YOUR_CRON_SECRET"
    ```
+6. Go to **Dashboard** to see and answer your questions
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### 9. Run tests
 
-3. Copy the environment file and fill in your values:
-   ```bash
-   cp .env.example .env.local
-   ```
+```bash
+npx vitest run
+```
 
-4. Generate the Prisma client:
-   ```bash
-   npx prisma generate
-   ```
+## Deploying to Vercel
 
-5. Push the schema to your database:
-   ```bash
-   npx prisma db push
-   ```
-
-6. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-7. Run tests:
-   ```bash
-   npx vitest run
-   ```
-
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+1. Push this repo to GitHub
+2. Import the repo at [vercel.com/new](https://vercel.com/new)
+3. Add all environment variables from `.env.local` to the Vercel project settings (Settings → Environment Variables). Update `NEXTAUTH_URL` to your production URL (e.g. `https://your-app.vercel.app`)
+4. Update your GitHub OAuth app's **Homepage URL** and **Callback URL** to use the production domain (`https://your-app.vercel.app/api/auth/callback/github`)
+5. Deploy — Vercel will automatically run `npm run build`
+6. The `vercel.json` cron config will trigger question generation daily at 07:00 UTC
 
 ## Environment Variables
 
-See `.env.example` for the full list. Key variables:
-
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `NEXTAUTH_URL` | App URL (http://localhost:3000 for dev) |
-| `NEXTAUTH_SECRET` | Random secret for NextAuth session encryption |
-| `GITHUB_CLIENT_ID` | GitHub OAuth app client ID |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret |
-| `LLM_PROVIDER` | `anthropic` (default) or `openai` |
-| `ANTHROPIC_API_KEY` | Anthropic API key (if using Anthropic) |
-| `OPENAI_API_KEY` | OpenAI API key (if using OpenAI) |
-| `RESEND_API_KEY` | Resend API key for email delivery |
-| `CRON_SECRET` | Secret to secure the cron endpoint |
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string (Neon) |
+| `NEXTAUTH_URL` | Yes | App URL (`http://localhost:3000` for dev) |
+| `NEXTAUTH_SECRET` | Yes | Random secret for session encryption |
+| `GITHUB_CLIENT_ID` | Yes | GitHub OAuth app client ID |
+| `GITHUB_CLIENT_SECRET` | Yes | GitHub OAuth app client secret |
+| `LLM_PROVIDER` | No | `anthropic` (default) or `openai` |
+| `ANTHROPIC_API_KEY` | If Anthropic | Anthropic API key |
+| `ANTHROPIC_MODEL` | No | Model override (default: `claude-sonnet-4-20250514`) |
+| `OPENAI_API_KEY` | If OpenAI | OpenAI API key |
+| `OPENAI_MODEL` | No | Model override (default: `gpt-4o`) |
+| `RESEND_API_KEY` | No | Resend API key for email delivery |
+| `CRON_SECRET` | Yes | Secret to secure the cron endpoint |
 
 ## Architecture
 
@@ -151,3 +210,10 @@ prisma/
 ## Cron
 
 Questions are generated daily at 07:00 UTC via Vercel Cron hitting `POST /api/cron/generate` (secured with `CRON_SECRET`).
+
+For local development, trigger manually:
+
+```bash
+curl -X POST http://localhost:3000/api/cron/generate \
+  -H "Authorization: Bearer YOUR_CRON_SECRET"
+```
