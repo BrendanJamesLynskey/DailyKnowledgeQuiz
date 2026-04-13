@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+
+export const metadata: Metadata = {
+  title: "History | Daily Knowledge Quiz",
+  description: "Review your past quiz batches and scores.",
+};
 
 export default async function HistoryPage() {
   const session = await getServerSession(authOptions);

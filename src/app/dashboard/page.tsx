@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+
+export const metadata: Metadata = {
+  title: "Dashboard | Daily Knowledge Quiz",
+  description: "Your daily quiz dashboard with streak, stats, and today's questions.",
+};
 import { calculateStreak, getSubjectBreakdown } from "@/lib/streak";
 import { StreakBadge } from "@/components/StreakBadge";
 import { StatsChart } from "@/components/StatsChart";

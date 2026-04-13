@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { RepoList } from "@/components/RepoList";
+
+export const metadata: Metadata = {
+  title: "Settings | Daily Knowledge Quiz",
+  description: "Manage your repositories and quiz preferences.",
+};
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);

@@ -9,11 +9,21 @@ A full-stack Next.js application that analyses a user's GitHub repositories, gen
 - **Database**: PostgreSQL via Neon
 - **ORM**: Prisma
 - **Auth**: NextAuth.js with GitHub OAuth
-- **LLM**: Anthropic Claude API (Sonnet) for question generation
+- **LLM**: Anthropic Claude API or OpenAI (configurable)
 - **Email**: Resend for transactional email
 - **Styling**: Tailwind CSS
 - **Testing**: Vitest
 - **Deployment**: Vercel + Neon
+
+## Features
+
+- **GitHub repo analysis** — syncs your public repos and extracts languages, topics, and README context
+- **AI-generated questions** — daily quiz questions tailored to your actual tech stack (Anthropic or OpenAI)
+- **Answer evaluation** — submit free-text answers and get LLM-powered feedback
+- **Email delivery** — daily digest email with your questions and a link to the web app
+- **Streak tracking** — consecutive-day streaks for answering all questions
+- **Stats dashboard** — accuracy rate, subject breakdown, and progress over time
+- **History** — review past batches, scores, and individual answers
 
 ## Getting Started
 
@@ -22,8 +32,8 @@ A full-stack Next.js application that analyses a user's GitHub repositories, gen
 - Node.js 18+
 - PostgreSQL database (Neon recommended)
 - GitHub OAuth app credentials
-- Anthropic API key
-- Resend API key
+- Anthropic or OpenAI API key
+- Resend API key (optional, for email delivery)
 
 ### Setup
 
@@ -58,6 +68,11 @@ A full-stack Next.js application that analyses a user's GitHub repositories, gen
    npm run dev
    ```
 
+7. Run tests:
+   ```bash
+   npx vitest run
+   ```
+
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ## Environment Variables
@@ -81,20 +96,58 @@ See `.env.example` for the full list. Key variables:
 
 ```
 src/
-├── app/           # Next.js App Router pages and API routes
-├── components/    # Reusable React components
-├── lib/           # Shared utilities (db, auth, GitHub client, LLM, email)
-└── types/         # Shared TypeScript types
+├── app/
+│   ├── layout.tsx              # Root layout with providers
+│   ├── page.tsx                # Landing page
+│   ├── error.tsx               # Global error boundary
+│   ├── not-found.tsx           # 404 page
+│   ├── dashboard/              # Main dashboard (streak, stats, today's questions)
+│   ├── questions/[batchId]/    # Daily question set view
+│   ├── history/                # Past questions and responses
+│   ├── settings/               # Repo selection, preferences
+│   └── api/
+│       ├── auth/[...nextauth]/ # NextAuth handler
+│       ├── cron/generate/      # Daily question generation (Vercel Cron)
+│       ├── repos/              # GET/POST repos, PATCH toggle
+│       ├── questions/          # GET today's questions
+│       └── responses/          # POST answer submission
+├── components/
+│   ├── AuthButton.tsx          # Sign in/out button
+│   ├── Navbar.tsx              # Navigation bar
+│   ├── QuestionCard.tsx        # Question with answer input
+│   ├── QuestionBatchView.tsx   # Card navigation for question set
+│   ├── RepoList.tsx            # Repo list with sync and toggle
+│   ├── StreakBadge.tsx         # Streak display
+│   └── StatsChart.tsx          # Subject breakdown chart
+├── lib/
+│   ├── db.ts                   # Prisma client singleton
+│   ├── auth.ts                 # NextAuth config
+│   ├── streak.ts               # Streak calculation and stats
+│   ├── github/
+│   │   ├── client.ts           # GitHub API wrapper
+│   │   └── analyser.ts         # Topic extraction from repos
+│   ├── llm/
+│   │   ├── client.ts           # Anthropic + OpenAI wrapper
+│   │   ├── prompts.ts          # Prompt templates
+│   │   └── generator.ts        # Question generation orchestration
+│   └── email/
+│       ├── client.ts           # Resend SDK wrapper
+│       └── templates.ts        # Daily digest HTML template
+└── types/
+    └── index.ts                # NextAuth type extensions
 prisma/
-└── schema.prisma  # Database schema
+└── schema.prisma               # Database schema (7 models)
 ```
 
-## Build Status
+## Data Model
 
-- **Phase 1: Project Scaffold** - Complete
-- **Phase 2: Auth** - Complete
-- **Phase 3: GitHub Integration** - Complete
-- **Phase 4: Question Generation** - Complete
-- **Phase 5: Question UI** - Complete
-- **Phase 6: Email Delivery** - Complete
-- **Phase 7: History & Stats** - Complete
+- **User** — GitHub-authenticated user with preferences
+- **Account/Session** — NextAuth adapter models
+- **Repo** — Synced GitHub repositories with topics and README context
+- **Question** — LLM-generated questions linked to repos
+- **Response** — User answers with correctness evaluation
+- **DailyBatch** — Daily question sets grouping questions for delivery
+
+## Cron
+
+Questions are generated daily at 07:00 UTC via Vercel Cron hitting `POST /api/cron/generate` (secured with `CRON_SECRET`).
