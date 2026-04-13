@@ -71,7 +71,9 @@ See `.env.example` for the full list. Key variables:
 | `NEXTAUTH_SECRET` | Random secret for NextAuth session encryption |
 | `GITHUB_CLIENT_ID` | GitHub OAuth app client ID |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret |
-| `ANTHROPIC_API_KEY` | Anthropic API key for question generation |
+| `LLM_PROVIDER` | `anthropic` (default) or `openai` |
+| `ANTHROPIC_API_KEY` | Anthropic API key (if using Anthropic) |
+| `OPENAI_API_KEY` | OpenAI API key (if using OpenAI) |
 | `RESEND_API_KEY` | Resend API key for email delivery |
 | `CRON_SECRET` | Secret to secure the cron endpoint |
 
