@@ -30,8 +30,8 @@ A full-stack Next.js application that analyses a user's GitHub repositories, gen
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/BrendanJamesLynskey/dummy_003.git
-cd dummy_003
+git clone https://github.com/BrendanJamesLynskey/DailyKnowledgeQuiz.git
+cd DailyKnowledgeQuiz
 npm install
 ```
 
